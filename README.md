@@ -1,6 +1,6 @@
 # DuskLight-ESP8266
 
-A network-connected ESP8266 that can automatically switch a light on at dusk and back of at a set time or at dawn.
+A network-connected ESP8266 that can automatically switch a light on at dusk and back off at a set time or at dawn.
 
 This project started as a wish to have a light automatically switched on at dusk, to give the impression that there's someone home. But it was as much a project to try out the Arduino environment and the ESP8266.
 
