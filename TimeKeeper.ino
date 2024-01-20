@@ -249,7 +249,7 @@ bool itsDark()
 
 bool lightIsOn()
 {
-  return digitalRead(gpioLed) == 0;
+  return digitalRead(gpioLight) == 0;
 }
 
 bool lightIsOff()
