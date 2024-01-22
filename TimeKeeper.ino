@@ -2,11 +2,9 @@
 
 Dusk2Dawn huizen(52.298, 5.234, 1);
 
-bool hasLastRecalculated = false;
-time_t timeLastRecalculated;
+bool timeParametersHaveBeenCalculated = false;
 
 bool shouldResetBackToAuto = false;
-time_t timeToResetBackToAuto;
 
 bool summerTime = false;
 
@@ -25,6 +23,11 @@ int randomMinutesAdjust = -1;
 LightMode_t currentLightMode = LightModeAutomatic;
 
 // Time functions
+
+bool isTimeValid(time_t time)
+{
+  return time > 946684800;
+}
 
 time_t getBeginningOfDay(time_t timeOfDay)
 {
@@ -61,57 +64,6 @@ String timeStringForMinutesIntoDay(int minutesIntoDay)
   return String(timeString);
 }
 
-int minutesToNextEvent()
-{
-  int nextEvent = -1;
-
-  if (hasLastRecalculated == true)
-  {
-    DebugPrintf("Recalculating minutesToNextEvent.\n");
-    
-    switchOffMinutesToday = sunriseTodayMinutes;
-    switchOnMinutesToday = sunsetTodayMinutes;
-    switchOffMinutesTomorrow = sunriseTomorrowMinutes;
-    
-    if (settings.timeToSwitchOff <= MINUTES_IN_DAY)
-    {
-      switchOffMinutesToday = settings.timeToSwitchOff + randomMinutesAdjust;
-      switchOffMinutesTomorrow = switchOffMinutesToday;
-    }
-
-    if (nowMinutes <= switchOffMinutesToday)
-    {
-      // It's before sunrise today, first dark part of the day => next event is at sunrise today.
-      nextEvent = switchOffMinutesToday - nowMinutes;
-    }
-    else if (nowMinutes <= switchOnMinutesToday)
-    {
-      // It's before sunset today, light part of the day => next event is sunset today.
-      nextEvent = switchOnMinutesToday - nowMinutes;
-    }
-    else
-    {
-      // It's after sunset today, second dark part of the day => next event is (slightly after) sunrise tomorrow.
-      nextEvent = ((24 * 60) - nowMinutes) + switchOffMinutesTomorrow;
-    }
-
-    #ifdef DEBUG
-    DebugPrintf("Daylight saving    : %s time\n", summerTime ? "Summer" : "Winter");
-    DebugPrintf("Switch off today   : %s\n", timeStringForMinutesIntoDay(switchOffMinutesToday).c_str());
-    DebugPrintf("Switch on today    : %s\n", timeStringForMinutesIntoDay(switchOnMinutesToday).c_str());
-    DebugPrintf("Switch off tomorrow: %s\n", timeStringForMinutesIntoDay(switchOffMinutesTomorrow).c_str());  
-    DebugPrintf("Next event in      : %d minutes\n", nextEvent);
-    DebugPrintf("Next event at      : %s\n", timeStringForMinutesIntoDay(normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent)).c_str());  
-    #endif
-  }
-  else
-  {
-    DebugPrintf("TimeKeeper parameters not recalculated yet, nextEvent is unknown");
-  }
-
-  return nextEvent;
-}
-
 void updateRandomMinutesAdjust()
 {
   int randMod = settings.randomMinutesBefore + settings.randomMinutesAfter;
@@ -136,69 +88,125 @@ void updateRandomMinutesAdjust()
 void recalculateTimeKeeperParameters()
 {
   DebugPrintf("Recalculate TimeKeeper parameters\n");
-  hasLastRecalculated = true;
-  timeLastRecalculated = now();
 
-  summerTime = NTP.isSummerTimePeriod(timeLastRecalculated);
+  time_t currentTime = now();
 
-  nowMinutes = minutesIntoDay(timeLastRecalculated);
+  if (!isTimeValid(currentTime))
+  {
+    DebugPrintf("Have time %lld, but it's not valid\n", currentTime);
+    return;
+  }
+  
+  summerTime = NTP.isSummerTimePeriod(currentTime);
 
-  DebugPrintf("now(): %lld\n", now());
+  nowMinutes = minutesIntoDay(currentTime);
 
-  // Note: 946684800 is 1-1-2000. The time is for sure valid when it's more than 1-1-2000.
-  if ((now() > 946684800) && ((nowMinutes == 0) || (randomMinutesAdjust == -1)))
+  // Note: This 946684800 is 1-1-2000 and is used as a crude check to check if the time is valid.
+  if ((nowMinutes == 0) || (randomMinutesAdjust == -1))
   {
     // Recalculate new random minutes. Let's recalculate once per day at 00:00.
     updateRandomMinutesAdjust();
   }
 
   TimeElements timeElementsNow;
-  breakTime(timeLastRecalculated, timeElementsNow);
+  breakTime(currentTime, timeElementsNow);
 
   sunriseTodayMinutes = huizen.sunrise(timeElementsNow.Year, timeElementsNow.Month, timeElementsNow.Day, summerTime);
   sunsetTodayMinutes = huizen.sunset(timeElementsNow.Year, timeElementsNow.Month, timeElementsNow.Day, summerTime);
 
   TimeElements timeElementsTomorrow;
-  breakTime(timeLastRecalculated + (24 * 60 * 60), timeElementsTomorrow);
+  breakTime(currentTime + SECONDS_IN_DAY, timeElementsTomorrow);
 
   sunriseTomorrowMinutes = huizen.sunrise(timeElementsTomorrow.Year, timeElementsTomorrow.Month, timeElementsTomorrow.Day, summerTime);
 
+  switchOffMinutesToday = sunriseTodayMinutes;
+  switchOnMinutesToday = sunsetTodayMinutes;
+  switchOffMinutesTomorrow = sunriseTomorrowMinutes;
+    
+  if (settings.timeToSwitchOff <= MINUTES_IN_DAY)
+  {
+    switchOffMinutesToday = settings.timeToSwitchOff + randomMinutesAdjust;
+    switchOffMinutesTomorrow = switchOffMinutesToday;
+  }
+
+  timeParametersHaveBeenCalculated = true;  
+
 #ifdef DEBUG
-  char timeToNextEventStr[] = "00:00";
-  Dusk2Dawn::min2str(timeToNextEventStr, minutesToNextEvent());
-  DebugPrintf("Time to next event : %s\n", timeToNextEventStr);
+  DebugPrintf("Daylight saving    : %s time\n", summerTime ? "Summer" : "Winter");
+  DebugPrintf("Sunrise today      : %s\n", timeStringForMinutesIntoDay(sunriseTodayMinutes).c_str());
+  DebugPrintf("Sunset today       : %s\n", timeStringForMinutesIntoDay(sunsetTodayMinutes).c_str());
+  DebugPrintf("Sunrise tomorrow   : %s\n", timeStringForMinutesIntoDay(sunriseTomorrowMinutes).c_str());
+  DebugPrintf("Switch off today   : %s\n", timeStringForMinutesIntoDay(switchOffMinutesToday).c_str());
+  DebugPrintf("Switch on today    : %s\n", timeStringForMinutesIntoDay(switchOnMinutesToday).c_str());
+  DebugPrintf("Switch off tomorrow: %s\n", timeStringForMinutesIntoDay(switchOffMinutesTomorrow).c_str());  
 #endif
+}
+
+int minutesToNextEvent()
+{
+  int nextEvent = -1;
+
+  if (timeParametersHaveBeenCalculated)
+  {
+    if (nowMinutes <= switchOffMinutesToday)
+    {
+      // It's before sunrise today, first dark part of the day => next event is at sunrise today.
+      nextEvent = switchOffMinutesToday - nowMinutes;
+    }
+    else if (nowMinutes <= switchOnMinutesToday)
+    {
+      // It's before sunset today, light part of the day => next event is sunset today.
+      nextEvent = switchOnMinutesToday - nowMinutes;
+    }
+    else
+    {
+      // It's after sunset today, second dark part of the day => next event is (slightly after) sunrise tomorrow.
+      nextEvent = ((24 * 60) - nowMinutes) + switchOffMinutesTomorrow;
+    }
+    
+    DebugPrintf("Next event is in %d minutes (%s)\n", nextEvent, timeStringForMinutesIntoDay(normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent)).c_str());
+  }
+  else
+  {
+    DebugPrintf("TimeKeeper parameters not recalculated yet, nextEvent is unknown");
+  }
+
+  return nextEvent;
 }
 
 void handleLightState()
 {
-  // Check if lightmode should be reset, and reset if necessary.
-  
-  if ((lightMode() == LightModeManual) && shouldResetBackToAuto)
+  if (timeParametersHaveBeenCalculated)
   {
-    if (now() > timeToResetBackToAuto)
+
+    // Check if lightmode should be reset to auto, and reset if necessary.
+  
+    if ((lightMode() == LightModeManual) && shouldResetBackToAuto)
     {
-      setLightMode(LightModeAutomatic);
-      timeToResetBackToAuto = 0;
-      shouldResetBackToAuto = false;
+     setLightMode(LightModeAutomatic);
+     shouldResetBackToAuto = false;
+    }
+
+    // Check if we should switch the light on or off.
+
+    if ((lightMode() == LightModeAutomatic))
+    {
+      if (lightIsOff() && lightShouldBeOn())
+      {
+        DebugPrintf("Automatic light switch on\n");
+        switchLightOn();      
+      }
+      else if (lightIsOn() && lightShouldBeOff())
+      {
+        DebugPrintf("Automatic light switch off\n");
+        switchLightOff();
+      }
     }
   }
-
-  // Check if we should switch the light on or off.
-
-  if ((lightMode() == LightModeAutomatic) && timeHasBeenSynced)
+  else
   {
-    if (itsDark() && lightIsOff())
-    {
-      DebugPrintf("Automatic light switch on\n");
-      switchLightOn();      
-    }
-    else if (!itsDark() && lightIsOn())
-    {
-      DebugPrintf("Automatic light switch off\n");
-      switchLightOff();
-    }
-  }  
+    switchLightOff();     
+  }
 }
 
 void checkForLightActions()
@@ -206,17 +214,18 @@ void checkForLightActions()
   if (timeHasBeenSynced)
   {
     recalculateTimeKeeperParameters();
-    DebugPrintf("- Time is %s (%s time), it's %s, light is %s, mode is %s.\n",
+    DebugPrintf("Current time is %s (%s time), mode is %s, it's %s, light is %s, light should be %s.\n",
                   NTP.getTimeDateString().c_str(),
                   isSummerTime() ? "summer" : "winter",
+                  (lightMode() == LightModeAutomatic) ? "auto" : "manual",
                   itsDark() ? "dark" : "light",
                   lightIsOn() ? "on" : "off",
-                  (lightMode() == LightModeAutomatic) ? "auto" : "manual");
+                  lightShouldBeOn() ? "on" : "off");
     handleLightState();
   }
   else
   {
-    DebugPrintf("- Time is not synced yet\n");
+    DebugPrintf("Current time is not synced yet, time parameters have not been calculated yet.\n");
   }
 }
 
@@ -224,10 +233,9 @@ void setLightMode(LightMode_t lightMode)
 {
   currentLightMode = lightMode;
   
-  // When we switch to manual, always set up an automatic reset of lightMode at the next event.
+  // When we switch to manual, we want to switch back to auto at the next event.
   if (lightMode == LightModeManual)
   {
-    timeToResetBackToAuto = getBeginningOfDay(now()) + ((nowMinutes + minutesToNextEvent()) * 60);
     shouldResetBackToAuto = true;
   }
 }
@@ -244,7 +252,7 @@ bool isSummerTime()
 
 bool itsDark()
 {
-  return ((nowMinutes < sunriseTodayMinutes) || (nowMinutes > sunsetTodayMinutes));
+  return (nowMinutes < sunriseTodayMinutes) || (nowMinutes >= sunsetTodayMinutes);
 }
 
 bool lightIsOn()
@@ -255,6 +263,17 @@ bool lightIsOn()
 bool lightIsOff()
 {
   return !lightIsOn();
+}
+
+bool lightShouldBeOn()
+{
+  return (nowMinutes < switchOffMinutesToday) || (nowMinutes >= switchOnMinutesToday);
+}
+
+bool lightShouldBeOff()
+{
+  
+  return (nowMinutes >= switchOffMinutesToday) && (nowMinutes < switchOnMinutesToday);
 }
 
 void switchLightOn()
