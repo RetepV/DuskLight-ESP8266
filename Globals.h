@@ -6,7 +6,22 @@
 // #define DEBUG
 #define RELEASE
 
+#define APPLICATION_NAME "DuskLight"
+#define APPLICATION_VERSION "1.3.4"
+
+#define AP_NAME "DuskLightAP"
+#define AP_PASSWORD "DuskLight"
+
+#define DEFAULT_MDNS_HOSTNAME "dusklight"
+// Sadly we need a const string for this and can't compose.
+#define DEFAULT_MDNS_PLACEHOLDER_STRING "placeholder=\"dusklight\""
+
 #define MINUTES_IN_DAY (24 * 60)
+#define SECONDS_IN_DAY (MINUTES_IN_DAY * 60)
+
+// Used 
+#define VALID_TIME_SECONDS 946684800
+
 #define HOSTNAME_MAXLENGTH 40
 
 #ifdef DEBUG
@@ -64,7 +79,7 @@ typedef enum ScheduleEntryType
 typedef struct SettingsType {
   unsigned char signature[2] = { 0x55, 0xAA };
   unsigned char version = 0x00;
-  char hostname[HOSTNAME_MAXLENGTH + 1] = "dusklighthost";
+  char hostname[HOSTNAME_MAXLENGTH + 1] = DEFAULT_MDNS_HOSTNAME;
   int16_t timeToSwitchOff = MINUTES_IN_DAY + 1; // If larger than MINUTES_IN_DAY, then the time to switch off is considered to not have been set.
   uint8_t randomMinutesBefore = 0;
   uint8_t randomMinutesAfter = 0;
@@ -92,7 +107,7 @@ extern int nowMinutes;
 
 extern int randomMinutesAdjust;
 
-extern bool hasLastRecalculated;
+extern bool timeParametersHaveBeenCalculated;
 
 // Function prototypes and other forward declarations
 

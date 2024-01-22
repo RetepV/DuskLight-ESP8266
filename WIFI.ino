@@ -1,6 +1,6 @@
 
-const char* wifiAPname = "DuskLightAP";
-const char* wifiAPpassword = "DuskLight";
+const char* wifiAPname = AP_NAME;
+const char* wifiAPpassword = AP_PASSWORD;
 
 WiFiManager wifiManager;
 
@@ -12,6 +12,8 @@ WiFiManagerParameter custom_numMinsAfter_parameter;
 
 void setupWiFi()
 {
+  DebugPrintf("Starting WiFi\n");
+
   WiFi.mode(WIFI_STA);
 
   setupExtraParameters();
@@ -27,18 +29,22 @@ void setupWiFi()
   }
   else
   {
-    DebugPrintf("Connected to WiFi");
+    DebugPrintf("Connected to WiFi\n");
   }  
 }
 
 void startWiFi()
 {
+  DebugPrintf("Starting services\n");
+
   setupServices();
   startServices();
 }
 
 void stopWiFi() 
 {
+  DebugPrintf("Stopping services\n");
+
   stopServices();
 }
 
@@ -66,7 +72,7 @@ uint16_t stringToMinutes(String timeString)
 void setupExtraParameters()
 {
   // hostname
-  new (&hostname_parameter) WiFiManagerParameter("hostname", "Hostname", "", HOSTNAME_MAXLENGTH, "placeholder=\"dusklighthost\"");
+  new (&hostname_parameter) WiFiManagerParameter("hostname", "Hostname", "", HOSTNAME_MAXLENGTH, DEFAULT_MDNS_PLACEHOLDER_STRING);
   wifiManager.addParameter(&hostname_parameter);
 
   // timeToSwitchOff

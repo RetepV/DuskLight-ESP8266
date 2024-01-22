@@ -26,7 +26,7 @@ void notFoundPage()
 {
   String message = "";
 
-  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>DuskLight error: page not found</H1></FONT></HEAD><BODY>";
+  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>" + String(APPLICATION_NAME) + " error: page not found</H1></FONT></HEAD><BODY>";
   message += "<FONT FACE=\"Helvetica\">URI: ";
   message += webServer.uri();
   message += "<BR>Method: ";
@@ -47,12 +47,12 @@ void statusPage()
 {
   String message = "";
 
-  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>DuskLight V1.3.1</H1></FONT></HEAD><BODY>";
+  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>" + String(APPLICATION_NAME) + " " + String(APPLICATION_VERSION) + "</H1></FONT></HEAD><BODY>";
   
   message += "<FONT FACE=\"Helvetica\">Current NTP time: ";
   message += timeHasBeenSynced ? NTP.getTimeDateString() : "Not synced yet";
 
-  if (!hasLastRecalculated)
+  if (!timeParametersHaveBeenCalculated)
   {
     message += "<BR><BR>Waiting for first calculation of TimeKeeper parameters...";
   }
@@ -118,10 +118,7 @@ void statusPage()
 
     if (shouldResetBackToAuto)
     {
-      message += "<TR><TD>&nbsp;</TD><TD>";
-      message += "Resets to auto at ";
-      message += NTP.getTimeDateString(timeToResetBackToAuto);
-      message += "</TD></TR>";
+      message += "<TR><TD>&nbsp;</TD><TD>Resets to auto at next event</TD></TR>";
     }
   }
   else

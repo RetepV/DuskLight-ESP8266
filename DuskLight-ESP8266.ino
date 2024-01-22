@@ -23,7 +23,7 @@ void setup()
   Serial.begin(115200);
 
   Serial.printf("\n");
-  Serial.printf("DuskLight V1.3.1\n");
+  Serial.printf("%s %s\n", APPLICATION_NAME, APPLICATION_VERSION);
 
   // Initialise pins.
 
