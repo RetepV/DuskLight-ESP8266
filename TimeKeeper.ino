@@ -181,13 +181,14 @@ void handleLightState()
 
     // Check if lightmode should be reset to auto, and reset if necessary.
   
-    if ((lightMode() == LightModeManual) && shouldResetBackToAuto)
+    if ((lightMode() == LightModeManual) && (minutesToNextEvent() == 0 ) && shouldResetBackToAuto)
     {
-     setLightMode(LightModeAutomatic);
-     shouldResetBackToAuto = false;
+      DebugPrintf("Reset mode back to auto\n");
+      setLightMode(LightModeAutomatic);
+      shouldResetBackToAuto = false;
     }
 
-    // Check if we should switch the light on or off.
+    // Check if we should switch the light on or off now.
 
     if ((lightMode() == LightModeAutomatic))
     {
@@ -272,7 +273,6 @@ bool lightShouldBeOn()
 
 bool lightShouldBeOff()
 {
-  
   return (nowMinutes >= switchOffMinutesToday) && (nowMinutes < switchOnMinutesToday);
 }
 
