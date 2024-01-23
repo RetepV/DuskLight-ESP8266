@@ -49,12 +49,7 @@ void processNTPSyncEvent()
     case timeSyncd:
       DebugPrintf("NTP time synchronized: %s\n", NTP.getTimeDateString(NTP.getLastNTPSync()).c_str());
       setTime(NTP.getLastNTPSync());
-      if (timeHasBeenSynced == false)
-      {
-        digitalWrite(gpioLed, 1);
-      }
       timeHasBeenSynced = true;
-      digitalWrite(gpioLed, 0);
       break;
     case requestSent:
       DebugPrintf("NTP request sent\n");
