@@ -57,11 +57,9 @@ int normalizedMinutesIntoDay(int minutes)
   return minutes;
 }
 
-String timeStringForMinutesIntoDay(int minutesIntoDay)
+void timeStringForMinutesIntoDay(int minutesIntoDay, char *timeString)
 {
-  char timeString[] = "00:00";
   Dusk2Dawn::min2str(timeString, minutesIntoDay);
-  return String(timeString);
 }
 
 void updateRandomMinutesAdjust()
@@ -132,13 +130,20 @@ void recalculateTimeKeeperParameters()
   timeParametersHaveBeenCalculated = true;  
 
 #ifdef DEBUG
+  char timeString[] = "00:00";
   DebugPrintf("Daylight saving    : %s time\n", summerTime ? "Summer" : "Winter");
-  DebugPrintf("Sunrise today      : %s\n", timeStringForMinutesIntoDay(sunriseTodayMinutes).c_str());
-  DebugPrintf("Sunset today       : %s\n", timeStringForMinutesIntoDay(sunsetTodayMinutes).c_str());
-  DebugPrintf("Sunrise tomorrow   : %s\n", timeStringForMinutesIntoDay(sunriseTomorrowMinutes).c_str());
-  DebugPrintf("Switch off today   : %s\n", timeStringForMinutesIntoDay(switchOffMinutesToday).c_str());
-  DebugPrintf("Switch on today    : %s\n", timeStringForMinutesIntoDay(switchOnMinutesToday).c_str());
-  DebugPrintf("Switch off tomorrow: %s\n", timeStringForMinutesIntoDay(switchOffMinutesTomorrow).c_str());  
+  Dusk2Dawn::min2str(timeString, sunriseTodayMinutes);
+  DebugPrintf("Sunrise today      : %s\n", timeString);
+  Dusk2Dawn::min2str(timeString, sunsetTodayMinutes);
+  DebugPrintf("Sunset today       : %s\n", timeString);
+  Dusk2Dawn::min2str(timeString, sunriseTomorrowMinutes);
+  DebugPrintf("Sunrise tomorrow   : %s\n", timeString);
+  Dusk2Dawn::min2str(timeString, switchOffMinutesToday);
+  DebugPrintf("Switch off today   : %s\n", timeString);
+  Dusk2Dawn::min2str(timeString, switchOnMinutesToday);
+  DebugPrintf("Switch on today    : %s\n", timeString);
+  Dusk2Dawn::min2str(timeString, switchOffMinutesTomorrow);
+  DebugPrintf("Switch off tomorrow: %s\n", timeString);  
 #endif
 }
 
@@ -163,8 +168,12 @@ int minutesToNextEvent()
       // It's after sunset today, second dark part of the day => next event is (slightly after) sunrise tomorrow.
       nextEvent = ((24 * 60) - nowMinutes) + switchOffMinutesTomorrow;
     }
-    
-    DebugPrintf("Next event is in %d minutes (%s)\n", nextEvent, timeStringForMinutesIntoDay(normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent)).c_str());
+
+#ifdef DEBUG
+    char timeString[] = "00:00";
+    Dusk2Dawn::min2str(timeString, normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent));
+    DebugPrintf("Next event is in %d minutes (%s)\n", nextEvent, timeString);
+#endif
   }
   else
   {

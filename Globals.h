@@ -116,7 +116,6 @@ extern bool timeParametersHaveBeenCalculated;
 time_t getBeginningOfDay(time_t timeOfDay);
 int minutesIntoDay(time_t timeOfDay);
 int normalizedMinutesIntoDay(int minutes);
-String timeStringForMinutesIntoDay(int minutesIntoDay);
 int minutesToNextEvent();
 
 void checkForLightActions();

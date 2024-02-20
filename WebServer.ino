@@ -1,5 +1,16 @@
 #include "Globals.h"
 
+// ESP8266Webserver can only handle one simultaneous client, so we can use a global buffer. The size is just a nice number that's big enough. Increase if necessary.
+#define WEBPAGE_BUFFER_SIZE 3072
+char webPageBuffer[WEBPAGE_BUFFER_SIZE];
+
+#define RESET_PAGE { memset(webPageBuffer, 0, WEBPAGE_BUFFER_SIZE); }
+#define ADD_PAGE(STRING) { strcat(webPageBuffer, STRING); }
+#define PAGE webPageBuffer
+
+#define META_INFO "<META NAME=\"viewport\" CONTENT=\"width=device-width, initial-scale=1\">"
+#define PAGE_STYLE "<STYLE>P{font-family:helvetica;font-size:20}H1{font-family:helvetica}INPUT{font-family:helvetica;font-size:20}TABLE{border:none;border-spacing:0;padding:0}TD{font-family:helvetica;font-size:20;vertical-align:middle;text-align:left;border:none;border-spacing:0;padding:0}</STYLE>"
+
 ESP8266WebServer webServer(80);
 
 void setupWebserver()
@@ -24,122 +35,160 @@ void stopWebserver()
 
 void notFoundPage()
 {
-  String message = "";
-
-  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>" + String(APPLICATION_NAME) + " error: page not found</H1></FONT></HEAD><BODY>";
-  message += "<FONT FACE=\"Helvetica\">URI: ";
-  message += webServer.uri();
-  message += "<BR>Method: ";
-  message += (webServer.method() == HTTP_GET) ? "GET" : "POST";
-  message += "<BR>Arguments: ";
-  message += webServer.args();
-  message += "<BR>";
+  RESET_PAGE;
+  
+  ADD_PAGE("<HTML><HEAD>");
+  ADD_PAGE(META_INFO);
+  ADD_PAGE(PAGE_STYLE);
+  ADD_PAGE("<H1>");
+  ADD_PAGE(APPLICATION_NAME)
+  ADD_PAGE(" ")
+  ADD_PAGE(APPLICATION_VERSION)
+  ADD_PAGE(" error: page not found</H1></HEAD><BODY><P>")
+  ADD_PAGE("<BR><BR>Server: ");
+  ADD_PAGE(webServer.uri().c_str())
+  ADD_PAGE("<BR>Method: ")
+  ADD_PAGE((webServer.method() == HTTP_GET) ? "GET" : "POST")
+  ADD_PAGE("<BR>Arguments:<BR>")
   for (uint8_t i = 0; i < webServer.args(); i++)
   {
-    message += "&nbsp;" + webServer.argName(i) + ":&nbsp;" + webServer.arg(i) + "<BR>";
+    ADD_PAGE("&nbsp;")
+    ADD_PAGE(webServer.argName(i).c_str())
+    ADD_PAGE(":&nbsp;")
+    ADD_PAGE(webServer.arg(i).c_str())
+    ADD_PAGE("<BR>")
   }
-  message += "</FONT></BODY></HTML>";
-
-  webServer.send(404, "text/html", message);
+  ADD_PAGE("</P></BODY></HTML>")
+  
+  webServer.send(404, "text/html", PAGE);
 }
 
 void statusPage() 
 {
-  String message = "";
+  RESET_PAGE;
 
-  message += "<HTML><HEAD><FONT FACE=\"Helvetica\"><H1>" + String(APPLICATION_NAME) + " " + String(APPLICATION_VERSION) + "</H1></FONT></HEAD><BODY>";
+  ADD_PAGE("<HTML><HEAD>");
+  ADD_PAGE(META_INFO);
+  ADD_PAGE(PAGE_STYLE);
+  ADD_PAGE("<H1>");
+  ADD_PAGE(APPLICATION_NAME)
+  ADD_PAGE(" ")
+  ADD_PAGE(APPLICATION_VERSION)
+  ADD_PAGE("</H1></HEAD><BODY><P>")
+
+  ADD_PAGE("Current NTP time: ")
+  if (timeHasBeenSynced)
+  {
+    ADD_PAGE(NTP.getTimeDateString().c_str())
+  }
+  else
+  {
+    ADD_PAGE("Not synced yet")
+  }
   
-  message += "<FONT FACE=\"Helvetica\">Current NTP time: ";
-  message += timeHasBeenSynced ? NTP.getTimeDateString() : "Not synced yet";
-
   if (!timeParametersHaveBeenCalculated)
   {
-    message += "<BR><BR>Waiting for first calculation of TimeKeeper parameters...";
+    ADD_PAGE("<BR><BR>Waiting for first calculation of TimeKeeper parameters...")
   }
   else
   {
     if (timeHasBeenSynced)
     {
-      message += "<BR><BR>Daylight saving: ";
-      message += isSummerTime() ? " Summer time" : "Winter time";
+      ADD_PAGE("<BR><BR>Daylight saving: ")
+      ADD_PAGE(isSummerTime() ? " Summer time" : "Winter time")
+
+      char buffer[16] = "";
       
-      message += "<BR><BR>Sunrise today: ";
-      message += timeStringForMinutesIntoDay(sunriseTodayMinutes);
-      message += "<BR>Sunset today: ";
-      message += timeStringForMinutesIntoDay(sunsetTodayMinutes);
-      message += "<BR>Sunrise tomorrow: ";
-      message += timeStringForMinutesIntoDay(sunriseTomorrowMinutes);
-  
-      message += "<BR><BR>Switch off today: ";
-      message += timeStringForMinutesIntoDay(switchOffMinutesToday);
-      message += "<BR>Switch on today: ";
-      message += timeStringForMinutesIntoDay(switchOnMinutesToday);
-      message += "<BR>Switch off tomorrow: ";
-      message += timeStringForMinutesIntoDay(switchOffMinutesTomorrow);
+      ADD_PAGE("<BR><BR>Sunrise today: ")
+      Dusk2Dawn::min2str(buffer, sunriseTodayMinutes);
+      ADD_PAGE(buffer)
+      ADD_PAGE("<BR>Sunset today: ")
+      Dusk2Dawn::min2str(buffer, sunsetTodayMinutes);
+      ADD_PAGE(buffer)
+      ADD_PAGE("<BR>Sunrise tomorrow: ")
+      Dusk2Dawn::min2str(buffer, sunriseTomorrowMinutes);
+      ADD_PAGE(buffer)
+
+      ADD_PAGE("<BR><BR>Switch off today: ")
+      Dusk2Dawn::min2str(buffer, switchOffMinutesToday);
+      ADD_PAGE(buffer)
+      ADD_PAGE("<BR>Switch on today: ")
+      Dusk2Dawn::min2str(buffer, switchOnMinutesToday);
+      ADD_PAGE(buffer)
+      ADD_PAGE("<BR>Switch off tomorrow: ")
+      Dusk2Dawn::min2str(buffer, switchOffMinutesTomorrow);
+      ADD_PAGE(buffer)
   
       if (settings.timeToSwitchOff < MINUTES_IN_DAY)
       {
-        message += "<BR><BR>Switch off at set time: ";
-        message += timeStringForMinutesIntoDay(settings.timeToSwitchOff);
-        message += " (random interval [-";
-        message += String(settings.randomMinutesBefore);
-        message += ":";
-        message += String(settings.randomMinutesAfter);
-        message += "]) with current random: ";
-        message += String(randomMinutesAdjust);
+        ADD_PAGE("<BR><BR>Switch off at set time: ")
+        Dusk2Dawn::min2str(buffer, settings.timeToSwitchOff);
+        ADD_PAGE(buffer)
+        ADD_PAGE(" (random interval [-")
+        sprintf(buffer, "%d", settings.randomMinutesBefore);
+        ADD_PAGE(buffer)
+        ADD_PAGE(":")
+        sprintf(buffer, "%d", settings.randomMinutesAfter);
+        ADD_PAGE(buffer)
+        ADD_PAGE("]) with current random: ")
+        sprintf(buffer, "%d", randomMinutesAdjust);
+        ADD_PAGE(buffer)
       }
       else
       {
-        message += "<BR><BR>Switching off at dawn";
+        ADD_PAGE("<BR><BR>Switching off at dawn")
       }
       
-      message += "<BR><BR>Today is ";
-      message += nowMinutes;
-      message += " minutes old";
+      ADD_PAGE("<BR><BR>Today is ")
+      sprintf(buffer, "%d", nowMinutes);
+      ADD_PAGE(buffer)
+      ADD_PAGE(" minutes old")
   
       int nextEvent = minutesToNextEvent();
       if (nextEvent != 0)
       {
-        message += "<BR><BR>Next event is at: ";
-        message += timeStringForMinutesIntoDay(normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent));
-        message += " (";
-        message += String(nextEvent);
-        message += " minutes)";
+        ADD_PAGE("<BR><BR>Next event is at: ")
+        Dusk2Dawn::min2str(buffer, normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent));
+        ADD_PAGE(buffer)
+        ADD_PAGE(" (")
+        sprintf(buffer, "%d", nextEvent);
+        ADD_PAGE(buffer)
+        ADD_PAGE(" minutes)")
       }
     }
   }
-
-  message += "<BR><BR><TABLE BORDERWIDTH=\"0\"><TR><TD STYLE=\"vertical-align:middle;\">Mode is ";
-  message += (lightMode() == LightModeAutomatic) ? "auto " : "manual ";
+  
+  ADD_PAGE("<BR><BR><TABLE BORDERWIDTH=\"0\"><TR><TD>Mode is ")
+  ADD_PAGE((lightMode() == LightModeAutomatic) ? "auto " : "manual ")
   if (lightMode() == LightModeManual)
   {
-    message += "</TD><FORM ACTION=\"/\" METHOD=\"POST\"><TD STYLE=\"vertical-align:middle;\"><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"auto\"></INPUT>";
-    message += "<INPUT TYPE=\"SUBMIT\" VALUE=\"Return to auto mode\"></TD></FORM></TR>";
+    ADD_PAGE("</TD><TD>&nbsp;</TD><FORM ACTION=\"/\" METHOD=\"POST\"><TD><INPUT TYPE=\"HIDDEN\" NAME=\"mode\" VALUE=\"auto\"></INPUT>")
+    ADD_PAGE("<INPUT TYPE=\"SUBMIT\" VALUE=\"Return to auto mode\"></TD></FORM></TR>")
 
     if (shouldResetBackToAuto)
     {
-      message += "<TR><TD>&nbsp;</TD><TD>Resets to auto at next event</TD></TR>";
+      ADD_PAGE("<TR><TD>&nbsp;</TD><TD>&nbsp;</TD><TD STYLE=\"font-size:14\">(will reset back to auto at next event)</TD></TR>")
     }
   }
   else
   {
-    message += "</TD></TR>";
+    ADD_PAGE("</TD><TD>&nbsp;</TD><TD>&nbsp;</TD></TR>")
   }
-    
-  message += "<TR><TD STYLE=\"vertical-align:middle;\">Light is ";
-  message += digitalRead(gpioLight) == 1 ? "off " : "on ";
+  ADD_PAGE("<TR><TD>&nbsp;</TD><TD>&nbsp;</TD><TD>&nbsp;</TD></TR>") 
+  ADD_PAGE("<TR><TD>Light is ")
+  ADD_PAGE(digitalRead(gpioLight) == 1 ? "off " : "on ")
 
-  message += "</TD><FORM ACTION=\"/\" METHOD=\"POST\"><TD STYLE=\"vertical-align:middle;\"><INPUT TYPE=\"HIDDEN\" NAME=\"light\" VALUE=\"";
-  message += digitalRead(gpioLight) == 1 ? "on" : "off";
-  message += "\"></INPUT>";
-  message += "<INPUT TYPE=\"SUBMIT\" VALUE=\"Switch light ";
-  message += digitalRead(gpioLight) == 1 ? "on" : "off";
-  message += "\">";
-  message += "</TD></FORM></TR></TABLE>";
+  ADD_PAGE("</TD><TD>&nbsp;</TD><FORM ACTION=\"/\" METHOD=\"POST\"><TD><INPUT TYPE=\"HIDDEN\" NAME=\"light\" VALUE=\"")
+  ADD_PAGE(digitalRead(gpioLight) == 1 ? "on" : "off")
+  ADD_PAGE("\"></INPUT>")
+  ADD_PAGE("<INPUT TYPE=\"SUBMIT\" VALUE=\"Switch light ")
+  ADD_PAGE(digitalRead(gpioLight) == 1 ? "on" : "off")
+  ADD_PAGE("\">")
+  ADD_PAGE("</TD></FORM></TR></TABLE>")
 
-  message += "</FONT></BODY></HTML>";
+  ADD_PAGE("</P></BODY></HTML>")
 
-  webServer.send(200, "text/html", message);
+  webServer.send(200, "text/html", PAGE);
 }
 
 void postPage()
