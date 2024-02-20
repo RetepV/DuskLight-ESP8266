@@ -7,7 +7,7 @@
 #define RELEASE
 
 #define APPLICATION_NAME "DuskLight"
-#define APPLICATION_VERSION "1.3.4"
+#define APPLICATION_VERSION "1.3.5"
 
 #define AP_NAME "DuskLightAP"
 #define AP_PASSWORD "DuskLight"
