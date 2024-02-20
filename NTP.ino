@@ -56,6 +56,12 @@ void processNTPSyncEvent()
       break;
     case noResponse:
       DebugPrintf("ERROR - No response, server not reachable\n");
+      // If time has not been synced yet and server is not reachable, retry immediately.
+      if (!timeHasBeenSynced)
+      {
+        stopNTP();
+        startNTP();
+      }
       break;
     case invalidAddress:
       DebugPrintf("ERROR - Invalid NTP server address\n");
