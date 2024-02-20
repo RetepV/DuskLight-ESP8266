@@ -49,7 +49,6 @@ void setup()
 
   // Further setup is done when WiFi connects.
   setupWiFi();
-  startWiFi();
 }
 
 void loop()
@@ -78,6 +77,13 @@ void loop()
     {
       previousButtonState = HIGH;
     }
+  }
+
+  // Handle WiFi connected
+  if (wifiConnected)
+  {
+    wifiConnected = false;
+    startWiFiServices();
   }
 
   // Update MDNS state

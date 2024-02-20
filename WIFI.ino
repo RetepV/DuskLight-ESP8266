@@ -4,11 +4,12 @@ const char* wifiAPpassword = AP_PASSWORD;
 
 WiFiManager wifiManager;
 
-// TODO: Why are we keeping these global?
 WiFiManagerParameter hostname_parameter;
 WiFiManagerParameter timeToSwitchOff_parameter;
 WiFiManagerParameter custom_numMinsBefore_parameter;
 WiFiManagerParameter custom_numMinsAfter_parameter;
+
+boolean wifiConnected = false;
 
 void setupWiFi()
 {
@@ -18,8 +19,12 @@ void setupWiFi()
 
   setupExtraParameters();
 
+#ifdef DEBUG
+  wifiManager.setDebugOutput(true);
+#else
   wifiManager.setDebugOutput(false);
-  
+#endif
+
   bool res = wifiManager.autoConnect(wifiAPname, wifiAPpassword);
   if (!res) 
   {
@@ -30,10 +35,11 @@ void setupWiFi()
   else
   {
     DebugPrintf("Connected to WiFi\n");
+    wifiConnected = true;
   }  
 }
 
-void startWiFi()
+void startWiFiServices()
 {
   DebugPrintf("Starting services\n");
 
@@ -41,7 +47,7 @@ void startWiFi()
   startServices();
 }
 
-void stopWiFi() 
+void stopWiFiServices() 
 {
   DebugPrintf("Stopping services\n");
 

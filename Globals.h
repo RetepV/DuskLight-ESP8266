@@ -147,9 +147,11 @@ void stopNTP();
 
 // WiFi
 
+extern boolean wifiConnected;
+
 void setupWiFi();
-void startWiFi();
-void stopWiFi();
+void startWiFiServices();
+void stopWiFiServices();
 void resetWiFiSettings();
 
 void setupServices();
