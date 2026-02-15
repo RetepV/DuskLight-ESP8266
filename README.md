@@ -16,6 +16,8 @@ Still, the great thing about Arduino is that it has libraries for just about eve
 
 Anyway, here is verson 1.4.1, which has many improvements over the earlier versions.
 
+If I will make a next version again, it will be to give more control over the schedule. I am thinking of making a web interface to manually edit the schedule. But I have no need for it, which means that I don't know if or when I will ever do it.
+
 **Project structure**
 
 - **DuskLight_ESP8266.ino**: The main .ino file
@@ -33,7 +35,7 @@ Anyway, here is verson 1.4.1, which has many improvements over the earlier versi
 
 **ESP8266 hardware notes**
 
-The ESP8266 has the light switch output on GPIO4. Use it to drive a relay through an NPN transistor circuit using a BC547. Take as example this circuit: https://www.eleccircuit.com/drive-relay-by-digital-circuit/. Your own implementation may vary, there are many ways to drive a relay from a GPIO pin.
+The ESP8266 has the light switch output on GPIO4. Use it to drive a relay through an NPN transistor circuit using a BC547. Take as example the circuits here, and read a bit about how it works: https://www.eleccircuit.com/drive-relay-by-digital-circuit/. Your own implementation may vary, there are many ways to drive a relay from a GPIO pin.
 
 The ESP8266 also listens to a button on GPIO5. This button has two purposes:
 
@@ -41,6 +43,16 @@ The ESP8266 also listens to a button on GPIO5. This button has two purposes:
 2. If the button is held down while powering up or resetting the ESP8266, it starts an access-point where WiFi and a few settings can be configured (also firmware can be updated).
 
 The first time the ESP8266 is switched on, it will automatically go into acces-point mode, where the WiFi and other settings can be configured.
+
+This is the actual implementation that I am using for my own Dusklight. Heed the warning about not trying to switch capacitive or inductive loads like motors or fridges. Use it to only switch resistive loads like incandescent lamps! It is safe for filament lamps, and I guess that LED lamps will be safe to use too. Make sure that your relay can switch the mains voltage (230V in Europe), and can handle enough current. 1 Ampére at 230V means that it can handle 230 Watt of resistive load.
+
+Also make sure that if you build it, you put it in a box. You don't want to have any live 230V wire sticking out, and want to make sure that it can never happen even accidentally. A live 230V wire can kill your pets, your kid, and even yourself. If you have kids, make sure that the device is even safe from your kid sticking some metal rod or wire into a hole. No holes allowed.
+
+![Screenshot 2026-02-15 at 18 27 37 copy](https://github.com/user-attachments/assets/a7bdcd75-5552-493a-a6f1-e2a2b29fcfe2)
+
+I repurposed an old, broken, wireless smart plug. All the 230V live wires are nicely contained, and it is safe against children trying to poke metal object in its holes. Note that I never made a PCB for the schematic I use, and I made it all on vero board. I have no pictures of the insides of my Dusklight.
+
+![IMG_4375](https://github.com/user-attachments/assets/2b57d130-7471-4106-bf25-5c814e99fa5c)
 
 **Access-point mode**
 
