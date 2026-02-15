@@ -84,6 +84,8 @@ public:
     int calculateBeginningOfWeekInSeconds(time_t timestampGMT);
     CEventSchedulerWeekDay calculateWeekDay(time_t timestampGMT);
 
+    void recalculateItemActivationTime(const CEventSchedulerItem item);
+
 private:
 
     int getActiveItemIndex(time_t timestampGMT);

@@ -296,6 +296,14 @@ CEventSchedulerWeekDay CEventScheduler::calculateWeekDay(time_t timestampGMT) {
     return static_cast<CEventSchedulerWeekDay>(weekDay);
 }
 
+void CEventScheduler::recalculateItemActivationTime(CEventSchedulerItem item) {
+    int foundItemIndex = findItemIndex(item);
+    if (foundItemIndex >= 0) {
+        recalculateActivationTime(items[foundItemIndex]);
+        sortItems();
+    }
+}
+
 time_t CEventScheduler::sunrise(time_t timestampGMT) {
     time_t beginningOfDayInGMT = calculateBeginningOfDayInSeconds(timestampGMT);
     // std::cout << "beginning of day: " << beginningOfDayInGMT << "\n";

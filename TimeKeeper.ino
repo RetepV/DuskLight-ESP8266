@@ -130,8 +130,12 @@ void handleAutomaticLightState()
   }
 }
 
-void checkForEvents()
-{
+void checkForEvents() {
+
+  if (scheduler == nullptr) {
+    return;
+  }
+
   time_t timestampGMT = now();
 
   if (isTimeValid(timestampGMT))
@@ -144,6 +148,15 @@ void checkForEvents()
     }
 
     if (!(newActiveItem == currentActiveItem)) {
+
+      // To make sure we don't have the same pattern of on/off every week, we need to re-randomize items once in a while. We
+      // cannot re-randomize the current active item here, as that will certainly give glitches. Another strategy might be
+      // to re-randomize the whole list at i.e. Sunday 12:00, but that might also cause glitches, as we will be re-randomizing
+      // the current active item again.
+      // But instead of re-randomizing the whole list, we can simply re-randomize the new next active item and then re-sort
+      // the list. No glitches, items wil be updated one by one.
+
+      scheduler->recalculateItemActivationTime(newNextActiveItem);
 
       currentActiveItem = newActiveItem;
       currentNextActiveItem = newNextActiveItem;
