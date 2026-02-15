@@ -174,9 +174,9 @@ void statusPage()
 
     ADD_TO_PAGE(WINDOW_START("Scheduler"))
 
-    CEventSchedulerItem activeItem = scheduler->getActiveItem(currentLocalTimestamp);
-    CEventSchedulerItem nextActiveItem = scheduler->getNextActiveItem(currentLocalTimestamp);
-    time_t beginningOfDay = scheduler->calculateBeginningOfDayInSeconds(currentLocalTimestamp);
+    CEventSchedulerItem activeItem = scheduler->getActiveItem(currentGMTTimestamp);
+    CEventSchedulerItem nextActiveItem = scheduler->getNextActiveItem(currentGMTTimestamp);
+    time_t beginningOfDay = scheduler->calculateBeginningOfDayInSeconds(currentGMTTimestamp);
 
     ADD_TO_PAGE("<table>")
     ADD_TO_PAGE("<tr><td><strong>Minutes into current day</strong></td><td>")
