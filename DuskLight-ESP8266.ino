@@ -22,8 +22,8 @@ void setup()
 
   Serial.begin(115200);
 
-  Serial.printf("\n");
-  Serial.printf("%s %s\n", APPLICATION_NAME, APPLICATION_VERSION);
+  DebugPrintf("\n");
+  DebugPrintf("%s %s\n", APPLICATION_NAME, APPLICATION_VERSION);
 
   // Initialise pins.
 
@@ -37,39 +37,39 @@ void setup()
 
   // Initial setup
 
+  DebugPrintf("Setup settings\n");
   setupSettings();
-  // If button is pressed during power up, erase settings. Device will go into AP mode.  
+
+  // If the button is pressed during power up, erase all settings. Device will go into AP mode.  
   if (digitalRead(gpioButton) == LOW)
   {
-    DebugPrintf("Resetting settings and starting AP\n");
+    DebugPrintf("Resetting settings and starting in AP mode.\n");
     eraseSettings();
     resetWiFiSettings();
   }
+
+  DebugPrintf("Fetch settings\n");
   startSettings();
 
-  // Further setup is done when WiFi connects.
+  // Further setup (starting of services) is done when WiFi connects.
+  DebugPrintf("Setup WiFi\n");
   setupWiFi();
 }
 
-void loop()
+void handleButtonStateChanges()
 {
-  // Handle button, using a crude debouncing algorithm. Basically sample HIGH/LOW and LOW/HIGH transitions every 20ms.
-  static int lastButtonCheck = 0;
-  if ((millis() - lastButtonCheck) > 20)
-  {
-    lastButtonCheck = millis();
     if ((previousButtonState == HIGH) && (digitalRead(gpioButton) == LOW))
     {
       setLightMode(LightModeManual);
       if (lightIsOn())
       {
         DebugPrintf("Light mode manual off (button press)\n");
-        switchLightOff();
+        switchLight(false);
       }
       else
       {
         DebugPrintf("Light mode manual on (button press)\n");
-        switchLightOn();
+        switchLight(true);
       }
       previousButtonState = LOW;
     }
@@ -77,40 +77,57 @@ void loop()
     {
       previousButtonState = HIGH;
     }
-  }
+}
+
+void handleEventStateChanges()
+{
+  checkForEvents();
+}
+
+void loop()
+{
+
+  // // Handle button, using a crude debouncing algorithm. Basically sample HIGH/LOW and LOW/HIGH transitions every 20ms.
+  // static int lastButtonCheck = 0;
+  // if ((millis() - lastButtonCheck) > 20)
+  // {
+  //   lastButtonCheck = millis();
+  //   handleButtonStateChanges();
+  // }
+
+  // Check button state changes once every 20ms, crude debouncing.
+  EXECUTE_PERIODICALLY(lastButtonCheck, 20, handleButtonStateChanges();)
 
   // Handle WiFi connected
-  if (wifiConnected)
+  if (wifiDidConnectEvent)
   {
-    wifiConnected = false;
+    wifiDidConnectEvent = false;
     startWiFiServices();
   }
 
-  // Update MDNS state
-
-  MDNS.update();
-
-  // Handle web server requests
-  
-  webServer.handleClient();
-
   // Handle NTP events
-  
   if (shouldProcessNTPEvent)
   {
     processNTPSyncEvent();
     shouldProcessNTPEvent = false;
   }
 
+  // Handle web server requests
+  webServer.handleClient();
+
+  // Update MDNS state
+  MDNS.update();
+
+  // Handle scheduler
   if (timeHasBeenSynced)
   {
-    // Check light state every 60 seconds
-    EXECUTE_PERIODICALLY(lastTimeKeeperCheck, 60 * 1000, checkForLightActions();)
+    // Check for events every 10 seconds.
+    EXECUTE_PERIODICALLY(lastTimeKeeperCheck, 10 * 1000, handleEventStateChanges();)
   }
   else
   {
     EXECUTE_PERIODICALLY(lastFlashLedCheck, 250, flashLed();)    
   }
     
-  delay(0);
+  delay(50);
 }

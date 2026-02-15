@@ -1,248 +1,77 @@
 #include "Globals.h"
+#include "EventScheduler.hpp"
 
-Dusk2Dawn huizen(52.298, 5.234, 1);
-
-bool timeParametersHaveBeenCalculated = false;
+const double latitude = 52.303713;      // Netherlands
+const double longitude = 5.259310;
 
 bool shouldResetBackToAuto = false;
-
-bool summerTime = false;
-
-int sunriseTodayMinutes;
-int sunsetTodayMinutes;
-int sunriseTomorrowMinutes;
-
-int switchOffMinutesToday;
-int switchOnMinutesToday;
-int switchOffMinutesTomorrow;
-
-int nowMinutes;
-
-int randomMinutesAdjust = -1;
-
 LightMode_t currentLightMode = LightModeAutomatic;
 
-// Time functions
+// To actually handle proper TimeZone (or secondsFromGMT) and Daylight Saving Time, we need to use
+// the TZInfo database. That contains all the information necessary, with all the exceptions for
+// every timezone in the world. Maybe one day I will add that, but for now you will have to
+// manually set 
+time_t secondsFromGMT = 0;
+bool daylightSavingTime = false;
+
+CEventScheduler *scheduler = nullptr;
+
+CEventSchedulerItem currentActiveItem;
+CEventSchedulerItem currentNextActiveItem;
+
+void setupTimeKeeper()
+{
+  // Set up the seconds from GMT and the daylightSavingTime from the settings. The app should not use
+  // the settings, but the global variables from TimeKeeper.
+
+  secondsFromGMT = settings.secondsFromGMT;
+  daylightSavingTime = settings.daylightSavingTime;
+
+  scheduler = new CEventScheduler(latitude, longitude, secondsFromGMT, [](){ return now(); });
+
+  if (daylightSavingTime) {
+    secondsFromGMT += 3600;
+  }
+}
+
+void programScheduler()
+{
+  DebugPrintf("Adding events to scheduler\n");
+
+  CEventSchedulerItemType switchOnType = CEventSchedulerItemType_Sunset;
+  CEventSchedulerItemType switchOffType = settings.timeToSwitchOff >= MINUTES_IN_DAY ? CEventSchedulerItemType_Sunrise : CEventSchedulerItemType_Time;
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Sunday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Sunday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Monday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Monday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Tuesday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Tuesday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Wednesday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Wednesday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Thursday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Thursday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Friday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Friday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Saturday, switchOnType, 0, settings.randomMinutesBefore, settings.randomMinutesAfter, 1));
+  scheduler->addItem(CEventSchedulerItem(CEventSchedulerDayNumber_Saturday, switchOffType, settings.timeToSwitchOff, settings.randomMinutesBefore, settings.randomMinutesAfter, 0));
+}
 
 bool isTimeValid(time_t time)
 {
-  return time > 946684800;
-}
-
-time_t getBeginningOfDay(time_t timeOfDay)
-{
-  TimeElements tmBeginningOfDay;
-  breakTime(timeOfDay, tmBeginningOfDay);
-
-  tmBeginningOfDay.Second = 0;
-  tmBeginningOfDay.Minute = 0;
-  tmBeginningOfDay.Hour = 0;
-
-  return makeTime(tmBeginningOfDay);
-}
-
-int minutesIntoDay(time_t timeOfDay)
-{
-  time_t beginningOfDay = getBeginningOfDay(timeOfDay);
-  int secondsToday = timeOfDay - beginningOfDay;
-  return (secondsToday / 60);
-}
-
-int normalizedMinutesIntoDay(int minutes)
-{
-  while (minutes >= MINUTES_IN_DAY)
-  {
-    minutes -= MINUTES_IN_DAY;
-  }
-  return minutes;
-}
-
-void timeStringForMinutesIntoDay(int minutesIntoDay, char *timeString)
-{
-  Dusk2Dawn::min2str(timeString, minutesIntoDay);
-}
-
-void updateRandomMinutesAdjust()
-{
-  int randMod = settings.randomMinutesBefore + settings.randomMinutesAfter;
-  
-  if (randMod > 0)
-  {
-    DebugPrintf("Seed random with time: %lld\n", now());
-    srand(now());
-    int randMinutes = rand() % randMod;
-    DebugPrintf("Updated random minutes - minsBefore:%d minsAfter:%d randMod:%d -> randMinutes:%d \n",
-                   settings.randomMinutesBefore, settings.randomMinutesAfter, randMod, randMinutes);
-    randomMinutesAdjust = randMinutes - settings.randomMinutesBefore;
-  }
-  else
-  {
-    randomMinutesAdjust = 0;
-  }
-
-  DebugPrintf("New random minutes adjust: %d\n", randomMinutesAdjust);
-}
-
-void recalculateTimeKeeperParameters()
-{
-  DebugPrintf("Recalculate TimeKeeper parameters\n");
-
-  time_t currentTime = now();
-
-  if (!isTimeValid(currentTime))
-  {
-    DebugPrintf("Have time %lld, but it's not valid\n", currentTime);
-    return;
-  }
-  
-  summerTime = NTP.isSummerTimePeriod(currentTime);
-
-  nowMinutes = minutesIntoDay(currentTime);
-
-  // Note: This 946684800 is 1-1-2000 and is used as a crude check to check if the time is valid.
-  if ((nowMinutes == 0) || (randomMinutesAdjust == -1))
-  {
-    // Recalculate new random minutes. Let's recalculate once per day at 00:00.
-    updateRandomMinutesAdjust();
-  }
-
-  TimeElements timeElementsNow;
-  breakTime(currentTime, timeElementsNow);
-
-  sunriseTodayMinutes = huizen.sunrise(timeElementsNow.Year, timeElementsNow.Month, timeElementsNow.Day, summerTime);
-  sunsetTodayMinutes = huizen.sunset(timeElementsNow.Year, timeElementsNow.Month, timeElementsNow.Day, summerTime);
-
-  TimeElements timeElementsTomorrow;
-  breakTime(currentTime + SECONDS_IN_DAY, timeElementsTomorrow);
-
-  sunriseTomorrowMinutes = huizen.sunrise(timeElementsTomorrow.Year, timeElementsTomorrow.Month, timeElementsTomorrow.Day, summerTime);
-
-  switchOffMinutesToday = sunriseTodayMinutes;
-  switchOnMinutesToday = sunsetTodayMinutes;
-  switchOffMinutesTomorrow = sunriseTomorrowMinutes;
-    
-  if (settings.timeToSwitchOff <= MINUTES_IN_DAY)
-  {
-    switchOffMinutesToday = settings.timeToSwitchOff + randomMinutesAdjust;
-    switchOffMinutesTomorrow = switchOffMinutesToday;
-  }
-
-  timeParametersHaveBeenCalculated = true;  
-
-#ifdef DEBUG
-  char timeString[] = "00:00";
-  DebugPrintf("Daylight saving    : %s time\n", summerTime ? "Summer" : "Winter");
-  Dusk2Dawn::min2str(timeString, sunriseTodayMinutes);
-  DebugPrintf("Sunrise today      : %s\n", timeString);
-  Dusk2Dawn::min2str(timeString, sunsetTodayMinutes);
-  DebugPrintf("Sunset today       : %s\n", timeString);
-  Dusk2Dawn::min2str(timeString, sunriseTomorrowMinutes);
-  DebugPrintf("Sunrise tomorrow   : %s\n", timeString);
-  Dusk2Dawn::min2str(timeString, switchOffMinutesToday);
-  DebugPrintf("Switch off today   : %s\n", timeString);
-  Dusk2Dawn::min2str(timeString, switchOnMinutesToday);
-  DebugPrintf("Switch on today    : %s\n", timeString);
-  Dusk2Dawn::min2str(timeString, switchOffMinutesTomorrow);
-  DebugPrintf("Switch off tomorrow: %s\n", timeString);  
-#endif
-}
-
-int minutesToNextEvent()
-{
-  int nextEvent = -1;
-
-  if (timeParametersHaveBeenCalculated)
-  {
-    if (nowMinutes <= switchOffMinutesToday)
-    {
-      // It's before sunrise today, first dark part of the day => next event is at sunrise today.
-      nextEvent = switchOffMinutesToday - nowMinutes;
-    }
-    else if (nowMinutes <= switchOnMinutesToday)
-    {
-      // It's before sunset today, light part of the day => next event is sunset today.
-      nextEvent = switchOnMinutesToday - nowMinutes;
-    }
-    else
-    {
-      // It's after sunset today, second dark part of the day => next event is (slightly after) sunrise tomorrow.
-      nextEvent = ((24 * 60) - nowMinutes) + switchOffMinutesTomorrow;
-    }
-
-#ifdef DEBUG
-    char timeString[] = "00:00";
-    Dusk2Dawn::min2str(timeString, normalizedMinutesIntoDay(minutesIntoDay(now()) + nextEvent));
-    DebugPrintf("Next event is in %d minutes (%s)\n", nextEvent, timeString);
-#endif
-  }
-  else
-  {
-    DebugPrintf("TimeKeeper parameters not recalculated yet, nextEvent is unknown");
-  }
-
-  return nextEvent;
-}
-
-void handleLightState()
-{
-  if (timeParametersHaveBeenCalculated)
-  {
-
-    // Check if lightmode should be reset to auto, and reset if necessary.
-  
-    if ((lightMode() == LightModeManual) && (minutesToNextEvent() == 0 ) && shouldResetBackToAuto)
-    {
-      DebugPrintf("Reset mode back to auto\n");
-      setLightMode(LightModeAutomatic);
-      shouldResetBackToAuto = false;
-    }
-
-    // Check if we should switch the light on or off now.
-
-    if ((lightMode() == LightModeAutomatic))
-    {
-      if (lightIsOff() && lightShouldBeOn())
-      {
-        DebugPrintf("Automatic light switch on\n");
-        switchLightOn();      
-      }
-      else if (lightIsOn() && lightShouldBeOff())
-      {
-        DebugPrintf("Automatic light switch off\n");
-        switchLightOff();
-      }
-    }
-  }
-  else
-  {
-    switchLightOff();     
-  }
-}
-
-void checkForLightActions()
-{
-  if (timeHasBeenSynced)
-  {
-    recalculateTimeKeeperParameters();
-    DebugPrintf("Current time is %s (%s time), mode is %s, it's %s, light is %s, light should be %s.\n",
-                  NTP.getTimeDateString().c_str(),
-                  isSummerTime() ? "summer" : "winter",
-                  (lightMode() == LightModeAutomatic) ? "auto" : "manual",
-                  itsDark() ? "dark" : "light",
-                  lightIsOn() ? "on" : "off",
-                  lightShouldBeOn() ? "on" : "off");
-    handleLightState();
-  }
-  else
-  {
-    DebugPrintf("Current time is not synced yet, time parameters have not been calculated yet.\n");
-  }
+  return time > 946684800;    // Let's assume the time is valid if it's later than January 1, 00:00:00.
 }
 
 void setLightMode(LightMode_t lightMode)
 {
+  DebugPrintf("Set mode to %s\n", lightMode == LightModeManual ? "manual" : "automatic" );
   currentLightMode = lightMode;
-  
   // When we switch to manual, we want to switch back to auto at the next event.
   if (lightMode == LightModeManual)
   {
@@ -255,16 +84,6 @@ LightMode_t lightMode()
   return currentLightMode;
 }
 
-bool isSummerTime()
-{
-  return summerTime;
-}
-
-bool itsDark()
-{
-  return (nowMinutes < sunriseTodayMinutes) || (nowMinutes >= sunsetTodayMinutes);
-}
-
 bool lightIsOn()
 {
   return digitalRead(gpioLight) == 0;
@@ -275,24 +94,73 @@ bool lightIsOff()
   return !lightIsOn();
 }
 
-bool lightShouldBeOn()
+void switchLight(bool on)
 {
-  return (nowMinutes < switchOffMinutesToday) || (nowMinutes >= switchOnMinutesToday);
+  if (on)
+  {
+    digitalWrite(gpioLed, 0);
+    digitalWrite(gpioLight, 0);
+  }
+  else
+  {
+    digitalWrite(gpioLed, 1);
+    digitalWrite(gpioLight, 1);
+  }
 }
 
-bool lightShouldBeOff()
+void handleResetToAuto()
 {
-  return (nowMinutes >= switchOffMinutesToday) && (nowMinutes < switchOnMinutesToday);
+  if ((lightMode() == LightModeManual) && shouldResetBackToAuto)
+  {
+    DebugPrintf("Mode was manual, reset mode back to auto\n");
+    setLightMode(LightModeAutomatic);
+    shouldResetBackToAuto = false;
+  }
 }
 
-void switchLightOn()
+void handleAutomaticLightState()
 {
-  digitalWrite(gpioLed, 0);
-  digitalWrite(gpioLight, 0);
+  DebugPrintf("handleAutomaticLightState\n");
+  handleResetToAuto();
+
+  if ((lightMode() == LightModeAutomatic))
+  {
+    DebugPrintf("Light mode is automatic, switch light %s\n", currentActiveItem.userDefined != 0 ? "ON" : "OFF");
+    switchLight(currentActiveItem.userDefined != 0);
+  }
 }
 
-void switchLightOff()
+void checkForEvents()
 {
-  digitalWrite(gpioLed, 1);
-  digitalWrite(gpioLight, 1);
+  time_t timestampGMT = now();
+
+  if (isTimeValid(timestampGMT))
+  {
+    CEventSchedulerItem newActiveItem = scheduler->getActiveItem(timestampGMT);
+    CEventSchedulerItem newNextActiveItem = scheduler->getNextActiveItem(timestampGMT);
+
+    if (scheduler->getNumberOfItems() == 0) {
+        programScheduler();
+    }
+
+    if (!(newActiveItem == currentActiveItem)) {
+
+      currentActiveItem = newActiveItem;
+      currentNextActiveItem = newNextActiveItem;
+
+      DebugPrintf("New scheduler event - weekday: %d, minutes into day: %d, userDefined: %d\n", currentActiveItem.activeWeekDay, currentActiveItem.activeTimeOffset, currentActiveItem.userDefined);
+      DebugPrintf("Next event - weekday: %d, minutes into day: %d, userDefined: %d\n", currentNextActiveItem.activeWeekDay, currentNextActiveItem.activeTimeOffset, currentNextActiveItem.userDefined);
+      
+      handleAutomaticLightState();
+    }
+    else {
+      // No change to be made.
+    }
+  }
+  else
+  {
+    DebugPrintf("Time not valid, keep light off\n");
+    // If time is not valid, keep the light off.
+    switchLight(false);     
+  }
 }

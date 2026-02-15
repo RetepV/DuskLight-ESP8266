@@ -27,10 +27,14 @@ void fetchSettings()
   {
     DebugPrintf("Found settings, loading\n");
     EEPROM.get(startAddress, settings);
+    DebugPrintf("Loaded settings:\n%s", settingsDebugString().c_str());
   }
   else
   {
-    // There is no signature, settings are cleared or random garbage. Write current (default) settings as new settings.
+    // There is no signature: settings are cleared, settings version has been updated, or settings are just random garbage.
+    // Write current (default) settings as new settings. Nicer would be to provide a way of upgrading the settings, but
+    // for now the best thing to do is to just restart the device with the button held down so that it goes into AP
+    // mode, and reprogram everything.
     DebugPrintf("No settings found, writing defaults\n");
     EEPROM.put(startAddress, settings);
     EEPROM.commit();
@@ -39,6 +43,7 @@ void fetchSettings()
 
 void saveSettings()
 {
+  DebugPrintf("Saving new settings:\n%s", settingsDebugString().c_str());
   unsigned int startAddress = 0;
   EEPROM.put(startAddress, settings);
   EEPROM.commit();
@@ -62,6 +67,10 @@ String settingsDebugString()
   debugString += "timeToSwitchOff      : " + String(settings.timeToSwitchOff) + "\n";
   debugString += "randomSecondsBefore  : " + String(settings.randomMinutesBefore) + "\n";
   debugString += "randomSecondsAfter   : " + String(settings.randomMinutesAfter) + "\n";
+  debugString += "secondsFromGMT       : " + String(settings.secondsFromGMT) + "\n";
+  debugString += "daylightSavingTime   : ";
+  debugString += (settings.daylightSavingTime ? "on (summer time)" : "off (winter time)");
+  debugString += "\n";
 
   return debugString;
 }

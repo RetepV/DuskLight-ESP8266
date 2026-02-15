@@ -3,11 +3,11 @@
 
 // Defines and macros
 
-// #define DEBUG
-#define RELEASE
+#define DEBUG
+// #define RELEASE
 
 #define APPLICATION_NAME "DuskLight"
-#define APPLICATION_VERSION "1.3.5"
+#define APPLICATION_VERSION "1.4.1"
 
 #define AP_NAME "DuskLightAP"
 #define AP_PASSWORD "DuskLight"
@@ -37,7 +37,6 @@
 #define EXECUTE_PERIODICALLY(TIMEVAR, MILLISECONDS, CODE) {\
   static int TIMEVAR = 0;\
   if ((millis() - TIMEVAR) > (MILLISECONDS)) {\
-    DebugPrintf("EXECUTE_PERIODICALLY " #TIMEVAR "\n");\
     TIMEVAR = millis();\
     CODE\
   }\
@@ -57,7 +56,6 @@
 #include <stdio.h>
 
 #include <math.h>
-#include <Dusk2Dawn.h>
 
 #include <EEPROM.h>
 
@@ -69,20 +67,17 @@ typedef enum LightMode
   LightModeManual
 } LightMode_t;
 
-typedef enum ScheduleEntryType
-{
-  Time = 0,
-  Dawn,
-  Dusk
-} ScheduleEntryType_t;
+#define SETTINGS_VERSION      0x00
 
 typedef struct SettingsType {
   unsigned char signature[2] = { 0x55, 0xAA };
-  unsigned char version = 0x00;
+  unsigned char version = SETTINGS_VERSION;
   char hostname[HOSTNAME_MAXLENGTH + 1] = DEFAULT_MDNS_HOSTNAME;
   int16_t timeToSwitchOff = MINUTES_IN_DAY + 1; // If larger than MINUTES_IN_DAY, then the time to switch off is considered to not have been set.
   uint8_t randomMinutesBefore = 0;
   uint8_t randomMinutesAfter = 0;
+  int32_t secondsFromGMT = 0;
+  bool    daylightSavingTime = false;
 } SettingsType_t;
 
 // GLobal constants
@@ -95,30 +90,17 @@ const int gpioButton = 5;
 
 extern int previousButtonState;
 
-extern int sunriseTodayMinutes;
-extern int sunsetTodayMinutes;
-extern int sunriseTomorrowMinutes;
-
-extern int switchOffMinutesToday;
-extern int switchOnMinutesToday;
-extern int switchOffMinutesTomorrow;
-
-extern int nowMinutes;
-
-extern int randomMinutesAdjust;
-
-extern bool timeParametersHaveBeenCalculated;
+extern bool timeIsValid;
 
 // Function prototypes and other forward declarations
 
 // TimeKeeper
 
-time_t getBeginningOfDay(time_t timeOfDay);
-int minutesIntoDay(time_t timeOfDay);
-int normalizedMinutesIntoDay(int minutes);
-int minutesToNextEvent();
+extern time_t secondsFromGMT;
 
-void checkForLightActions();
+void setupTimeKeeper();
+void handleAutomaticLightState();
+void checkForEvents();
 
 // Settings
 
@@ -146,7 +128,7 @@ void stopNTP();
 
 // WiFi
 
-extern boolean wifiConnected;
+extern boolean wifiDidConnectEvent;
 
 void setupWiFi();
 void startWiFiServices();
