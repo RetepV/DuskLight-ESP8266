@@ -66,7 +66,7 @@ void CEventScheduler::setSecondsFromGMT(time_t secondsFromGMT) {
 //       most cases. But if there is no randomnes, only the first item is simply returned.
 //       Probably it's beneficial to be able to have duplicates. Can we do that without adding
 //       something that makes them unique (like an ID)?
-int CEventScheduler::addItem(const CEventSchedulerItem& item) {
+int CEventScheduler::addItem(const CEventSchedulerItem item) {
 
     if (numberOfStoredItems >= numberOfSchedulerItems) {
         return -1; // No space left
@@ -84,8 +84,7 @@ int CEventScheduler::addItem(const CEventSchedulerItem& item) {
     return 0;
 }
  
-int CEventScheduler::removeItem(const CEventSchedulerItem& item) {
-
+int CEventScheduler::removeItem(const CEventSchedulerItem item) {
     int foundItemIndex = findItemIndex(item);
     if (foundItemIndex >= 0) {
         items[foundItemIndex] = CEventSchedulerItem{}; // Invalidate the item
@@ -108,12 +107,10 @@ CEventSchedulerItem CEventScheduler::getItem(int index) {
     return CEventSchedulerItem();
 }
 
-CEventSchedulerItem CEventScheduler::findItem(const CEventSchedulerItem& itemToFind) {
-    
-    int itemIndex = findItemIndex(itemToFind);
-    
-    if (itemIndex >= 0) {
-        return items[itemIndex];
+CEventSchedulerItem CEventScheduler::findItem(const CEventSchedulerItem itemToFind) {
+    int foundItemIndex = findItemIndex(itemToFind);
+    if (foundItemIndex >= 0) {
+        return items[foundItemIndex];
     }
 
     return CEventSchedulerItem();
@@ -216,7 +213,7 @@ int CEventScheduler::getActiveItemIndex(time_t timestampGMT) {
     return -1;
 }
 
-int CEventScheduler::findItemIndex(const CEventSchedulerItem& itemToFind) {
+int CEventScheduler::findItemIndex(const CEventSchedulerItem itemToFind) {
     for (int i = 0; i < numberOfStoredItems; i++) {
         if (items[i] == itemToFind) {
             return i;

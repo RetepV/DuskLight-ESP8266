@@ -61,13 +61,13 @@ public:
 
     void resetItems(void);
 
-    int addItem(const CEventSchedulerItem& item);
-    int removeItem(const CEventSchedulerItem& item);
+    int addItem(const CEventSchedulerItem item);
+    int removeItem(const CEventSchedulerItem item);
 
     int getNumberOfItems(void);
 
     CEventSchedulerItem getItem(int index);
-    CEventSchedulerItem findItem(const CEventSchedulerItem& itemToFind);
+    CEventSchedulerItem findItem(const CEventSchedulerItem itemToFind);
 
     CEventSchedulerItem getActiveItem(void);
     CEventSchedulerItem getNextActiveItem(void);
@@ -87,10 +87,9 @@ public:
 private:
 
     int getActiveItemIndex(time_t timestampGMT);
-    int findItemIndex(const CEventSchedulerItem& itemToFind);
-
-    void sortItems(void);
+    int findItemIndex(const CEventSchedulerItem itemToFind);
 
     void recalculateAllActivationTimes(void);
     void recalculateActivationTime(CEventSchedulerItem &item);
+    void sortItems(void);
 };

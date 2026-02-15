@@ -86,15 +86,6 @@ void handleEventStateChanges()
 
 void loop()
 {
-
-  // // Handle button, using a crude debouncing algorithm. Basically sample HIGH/LOW and LOW/HIGH transitions every 20ms.
-  // static int lastButtonCheck = 0;
-  // if ((millis() - lastButtonCheck) > 20)
-  // {
-  //   lastButtonCheck = millis();
-  //   handleButtonStateChanges();
-  // }
-
   // Check button state changes once every 20ms, crude debouncing.
   EXECUTE_PERIODICALLY(lastButtonCheck, 20, handleButtonStateChanges();)
 
