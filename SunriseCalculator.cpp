@@ -1,6 +1,4 @@
-#include <ctime>
-#include <cmath>
-#include <iostream>
+#include <math.h>
 
 #include "SunriseCalculator.hpp"
 
@@ -15,35 +13,35 @@
 void CSunriseCalculator::sunRiseAndSetForTimestamp(time_t timestampGMT, time_t secondsFromGMT, time_t &sunRise, time_t &sunSet) {
     // Calculate Julian day of year
     double julianDayOfYear = ceil(UNIX_TO_JULIAN(timestampGMT + secondsFromGMT) - (2451545.0 + 0.0009) + (69.184 / 86400.0));
-    // Mean solar time
+    // Mean solar time`
     double meanSolarTime = julianDayOfYear + 0.0009 - (longitude / 360.0);
     // Solar mean anomaly
-    double solarMeanAnomaly = std::fmod(357.5291 + 0.98560028 * meanSolarTime, 360.0);
+    double solarMeanAnomaly = fmod(357.5291 + 0.98560028 * meanSolarTime, 360.0);
     if (solarMeanAnomaly < 0) solarMeanAnomaly += 360.0; // Necessary?
     // Equation of the center
-    double equationOfTheCenter = (1.9148 * std::sin(DEG_TO_RAD(solarMeanAnomaly)) + 
-                                 0.02 * std::sin(2 * DEG_TO_RAD(solarMeanAnomaly)) + 
-                                 0.0003 * std::sin(3 * DEG_TO_RAD(solarMeanAnomaly)));
+    double equationOfTheCenter = (1.9148 * sin(DEG_TO_RAD(solarMeanAnomaly)) + 
+                                 0.02 * sin(2 * DEG_TO_RAD(solarMeanAnomaly)) + 
+                                 0.0003 * sin(3 * DEG_TO_RAD(solarMeanAnomaly)));
     // Ecliptic longitude
-    double eclipticLongitude = std::fmod(solarMeanAnomaly + equationOfTheCenter + 180.0 + 102.9372, 360.0);
+    double eclipticLongitude = fmod(solarMeanAnomaly + equationOfTheCenter + 180.0 + 102.9372, 360.0);
     if (eclipticLongitude < 0) eclipticLongitude += 360.0;  // Necessary?
     // Solar transit
     double solarTransit = 2451545.0 + 
                          meanSolarTime +
-                         0.0053 * std::sin(DEG_TO_RAD(solarMeanAnomaly)) - 
-                         0.0069 * std::sin(2 * DEG_TO_RAD(eclipticLongitude));
-    time_t solarTransitTime = static_cast<std::time_t>(JULIAN_TO_UNIX(solarTransit));
+                         0.0053 * sin(DEG_TO_RAD(solarMeanAnomaly)) - 
+                         0.0069 * sin(2 * DEG_TO_RAD(eclipticLongitude));
+    time_t solarTransitTime = static_cast<time_t>(JULIAN_TO_UNIX(solarTransit));
     // Declination of the sun
-    double sunDecline = RAD_TO_DEG(std::asin(std::sin(DEG_TO_RAD(eclipticLongitude)) * 
-                                  std::sin(DEG_TO_RAD(23.4393))));
+    double sunDecline = RAD_TO_DEG(asin(sin(DEG_TO_RAD(eclipticLongitude)) * 
+                                  sin(DEG_TO_RAD(23.4393))));
     // Hour angle
-    double hourAngle = RAD_TO_DEG(std::acos((std::sin(DEG_TO_RAD(-0.833)) - 
-                                 std::sin(DEG_TO_RAD(latitude)) * std::sin(DEG_TO_RAD(sunDecline))) / 
-                                (std::cos(DEG_TO_RAD(latitude)) * std::cos(DEG_TO_RAD(sunDecline)))));
+    double hourAngle = RAD_TO_DEG(acos((sin(DEG_TO_RAD(-0.833)) - 
+                                 sin(DEG_TO_RAD(latitude)) * sin(DEG_TO_RAD(sunDecline))) / 
+                                (cos(DEG_TO_RAD(latitude)) * cos(DEG_TO_RAD(sunDecline)))));
     // Sunrise and sunset in Julian Day Number
     double sunriseJulianDay = solarTransit - hourAngle / 360.0;
     double sunsetJulianDay = solarTransit + hourAngle / 360.0;
     // Calculate back to unix time
-    sunRise = static_cast<std::time_t>(JULIAN_TO_UNIX(sunriseJulianDay));
-    sunSet = static_cast<std::time_t>(JULIAN_TO_UNIX(sunsetJulianDay));
+    sunRise = static_cast<time_t>(JULIAN_TO_UNIX(sunriseJulianDay));
+    sunSet = static_cast<time_t>(JULIAN_TO_UNIX(sunsetJulianDay));
 }

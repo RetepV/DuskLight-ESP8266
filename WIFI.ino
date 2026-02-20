@@ -15,7 +15,7 @@ boolean wifiDidConnectEvent = false;
 
 void setupWiFi()
 {
-  DebugPrintf("Starting WiFi\n");
+  DebugPrintf(PSTR("Starting WiFi\n"));
 
   wifiDidConnectEvent = false;
 
@@ -29,24 +29,24 @@ void setupWiFi()
   wifiManager.setDebugOutput(false);
 #endif
 
-  DebugPrintf("Connecting WiFi\n");
+  DebugPrintf(PSTR("Connecting WiFi\n"));
   bool res = wifiManager.autoConnect(wifiAPname, wifiAPpassword);
   if (!res) 
   {
-    DebugPrintf("Failed to connect, resetting wifi settings and restarting in AP mode");
+    DebugPrintf(PSTR("Failed to connect, resetting wifi settings and restarting in AP mode"));
     wifiManager.resetSettings();
     ESP.restart();
   }
   else
   {
-    DebugPrintf("Connected to WiFi\n");
+    DebugPrintf(PSTR("Connected to WiFi\n"));
     wifiDidConnectEvent = true;
   }  
 }
 
 void startWiFiServices()
 {
-  DebugPrintf("Starting services\n");
+  DebugPrintf(PSTR("Starting services\n"));
 
   setupServices();
   startServices();
@@ -54,14 +54,14 @@ void startWiFiServices()
 
 void stopWiFiServices() 
 {
-  DebugPrintf("Stopping services\n");
+  DebugPrintf(PSTR("Stopping services\n"));
 
   stopServices();
 }
 
 void resetWiFiSettings()
 {
-  DebugPrintf("Reset WiFi settings to defaults.");
+  DebugPrintf(PSTR("Reset WiFi settings to defaults."));
   wifiManager.resetSettings();
 }
 
@@ -119,7 +119,7 @@ void setupExtraParameters()
 
 void saveParamsCallback()
 {
-  DebugPrintf("WiFi parameters saved");
+  DebugPrintf(PSTR("WiFi parameters saved"));
 
   bool settingsChanged = false;
 
@@ -187,7 +187,7 @@ void saveParamsCallback()
 
   if (settingsChanged == true)
   {
-    DebugPrintf("Saving new settings:\n%s", settingsDebugString().c_str());
+    DebugPrintf(PSTR("Saving new settings:\n%s"), settingsDebugString().c_str());
     saveSettings();
   }
 }

@@ -1,8 +1,6 @@
 #pragma once
 
-#include <stdio.h>
-#include <iostream>
-#include <iomanip>
+#include <time.h>
 #include <random>
 
 #include "EventSchedulerItem.hpp"
@@ -43,7 +41,7 @@ private:
     static const int        daysInWeek = 7;
     static const CEventSchedulerWeekDay epochWeekDay = CEventSchedulerDayNumber_Thursday;
 
-    CEventSchedulerItem     items[numberOfSchedulerItems];
+    CEventSchedulerItem     schedulerItems[numberOfSchedulerItems];
     int                     numberOfStoredItems = 0;
 
     CSunriseCalculator      sunriseCalculator;

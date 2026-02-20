@@ -36,7 +36,7 @@ void setupTimeKeeper()
 
 void programScheduler()
 {
-  DebugPrintf("Adding events to scheduler\n");
+  DebugPrintf(PSTR("Adding events to scheduler\n"));
 
   CEventSchedulerItemType switchOnType = CEventSchedulerItemType_Sunset;
   CEventSchedulerItemType switchOffType = settings.timeToSwitchOff >= MINUTES_IN_DAY ? CEventSchedulerItemType_Sunrise : CEventSchedulerItemType_Time;
@@ -70,7 +70,7 @@ bool isTimeValid(time_t time)
 
 void setLightMode(LightMode_t lightMode)
 {
-  DebugPrintf("Set mode to %s\n", lightMode == LightModeManual ? "manual" : "automatic" );
+  DebugPrintf(PSTR("Set mode to %s\n"), lightMode == LightModeManual ? "manual" : "automatic" );
   currentLightMode = lightMode;
   // When we switch to manual, we want to switch back to auto at the next event.
   if (lightMode == LightModeManual)
@@ -112,7 +112,7 @@ void handleResetToAuto()
 {
   if ((lightMode() == LightModeManual) && shouldResetBackToAuto)
   {
-    DebugPrintf("Mode was manual, reset mode back to auto\n");
+    DebugPrintf(PSTR("Mode was manual, reset mode back to auto\n"));
     setLightMode(LightModeAutomatic);
     shouldResetBackToAuto = false;
   }
@@ -120,12 +120,12 @@ void handleResetToAuto()
 
 void handleAutomaticLightState()
 {
-  DebugPrintf("handleAutomaticLightState\n");
+  DebugPrintf(PSTR("handleAutomaticLightState\n"));
   handleResetToAuto();
 
   if ((lightMode() == LightModeAutomatic))
   {
-    DebugPrintf("Light mode is automatic, switch light %s\n", currentActiveItem.userDefined != 0 ? "ON" : "OFF");
+    DebugPrintf(PSTR("Light mode is automatic, switch light %s\n"), currentActiveItem.userDefined != 0 ? "ON" : "OFF");
     switchLight(currentActiveItem.userDefined != 0);
   }
 }
@@ -161,8 +161,8 @@ void checkForEvents() {
       currentActiveItem = newActiveItem;
       currentNextActiveItem = newNextActiveItem;
 
-      DebugPrintf("New scheduler event - weekday: %d, minutes into day: %d, userDefined: %d\n", currentActiveItem.activeWeekDay, currentActiveItem.activeTimeOffset, currentActiveItem.userDefined);
-      DebugPrintf("Next event - weekday: %d, minutes into day: %d, userDefined: %d\n", currentNextActiveItem.activeWeekDay, currentNextActiveItem.activeTimeOffset, currentNextActiveItem.userDefined);
+      DebugPrintf(PSTR("New scheduler event - weekday: %d, minutes into day: %d, userDefined: %d\n"), currentActiveItem.activeWeekDay, currentActiveItem.activeTimeOffset, currentActiveItem.userDefined);
+      DebugPrintf(PSTR("Next event - weekday: %d, minutes into day: %d, userDefined: %d\n"), currentNextActiveItem.activeWeekDay, currentNextActiveItem.activeTimeOffset, currentNextActiveItem.userDefined);
       
       handleAutomaticLightState();
     }
@@ -172,7 +172,7 @@ void checkForEvents() {
   }
   else
   {
-    DebugPrintf("Time not valid, keep light off\n");
+    DebugPrintf(PSTR("Time not valid, keep light off\n"));
     // If time is not valid, keep the light off.
     switchLight(false);     
   }

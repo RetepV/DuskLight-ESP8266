@@ -1,8 +1,4 @@
-#include "TimeLib.h"
 #pragma once
-
-#include <stdio.h>
-#include <stdint.h>
 
 enum CEventSchedulerWeekDay: uint8_t {
     CEventSchedulerDayNumber_Uninitialized = 0,
@@ -21,8 +17,6 @@ enum CEventSchedulerItemType: uint8_t {
     CEventSchedulerItemType_Sunrise,                    // Sunrise 
     CEventSchedulerItemType_Sunset                      // Sunset
 };
-
-// #include "DebugStuff.hpp"
 
 struct CEventSchedulerItem {
 
@@ -92,7 +86,7 @@ struct CEventSchedulerItem {
         return false;
     }
 
-    const char *evenTypeAsString() {
+    const char *eventTypeAsString() {
         switch (eventType) {
             case CEventSchedulerItemType_Spare: return "Spare";
             case CEventSchedulerItemType_Time: return "Time";
@@ -110,14 +104,17 @@ struct CEventSchedulerItem {
         return _weekDayAsString(activeWeekDay);
     }
 
-    void debugPrint() const {
-        std::cout << "CEventSchedulerItem: type " << eventType
-                  << " on day " << weekDay << " at " << (timeOffset / 60) << ":" << std::setfill('0') << std::setw(2) << (timeOffset % 60)
-                  << " with rnd [-" << (int)randomOffsetMinus << "," << (int)randomOffsetPlus << "]"
-                  << ", activates on day " << activeWeekDay << " at " << (activeTimeOffset / 60) << ":" << std::setfill('0') << std::setw(2) << (activeTimeOffset % 60)
-                  << " - value: " << (int)userDefined
-                  << "\n";
-    }
+    // void debugPrint() {
+    //     printf("[CEventSchedulerItem]: type:%s day:%s time:%2d:%02d rnd:[-%d,%d], activates on day:%s time:%2d:%02d, value:%d",
+    //         eventTypeAsString(),
+    //         weekDayAsString(),
+    //         (timeOffset / 60), (timeOffset % 60),
+    //         randomOffsetMinus, randomOffsetPlus,
+    //         activeWeekDayAsString(),
+    //         (activeTimeOffset / 60), (activeTimeOffset % 60),
+    //         (int)userDefined
+    //     );
+    // }
 
 private:
     const char *_weekDayAsString(CEventSchedulerWeekDay weekday) {

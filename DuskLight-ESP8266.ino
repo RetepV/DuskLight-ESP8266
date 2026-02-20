@@ -22,8 +22,8 @@ void setup()
 
   Serial.begin(115200);
 
-  DebugPrintf("\n");
-  DebugPrintf("%s %s\n", APPLICATION_NAME, APPLICATION_VERSION);
+  DebugPrintf(PSTR("\n"));
+  DebugPrintf(PSTR("%s %s\n"), APPLICATION_NAME, APPLICATION_VERSION);
 
   // Initialise pins.
 
@@ -37,23 +37,25 @@ void setup()
 
   // Initial setup
 
-  DebugPrintf("Setup settings\n");
+  DebugPrintf(PSTR("Setup settings\n"));
   setupSettings();
 
   // If the button is pressed during power up, erase all settings. Device will go into AP mode.  
   if (digitalRead(gpioButton) == LOW)
   {
-    DebugPrintf("Resetting settings and starting in AP mode.\n");
+    DebugPrintf(PSTR("Resetting settings and starting in AP mode.\n"));
     eraseSettings();
     resetWiFiSettings();
   }
 
-  DebugPrintf("Fetch settings\n");
+  DebugPrintf(PSTR("Fetch settings\n"));
   startSettings();
 
   // Further setup (starting of services) is done when WiFi connects.
-  DebugPrintf("Setup WiFi\n");
+  DebugPrintf(PSTR("Setup WiFi\n"));
   setupWiFi();
+
+  // logFreeMemory();
 }
 
 void handleButtonStateChanges()
@@ -63,12 +65,12 @@ void handleButtonStateChanges()
       setLightMode(LightModeManual);
       if (lightIsOn())
       {
-        DebugPrintf("Light mode manual off (button press)\n");
+        DebugPrintf(PSTR("Light mode manual off (button press)\n"));
         switchLight(false);
       }
       else
       {
-        DebugPrintf("Light mode manual on (button press)\n");
+        DebugPrintf(PSTR("Light mode manual on (button press)\n"));
         switchLight(true);
       }
       previousButtonState = LOW;
@@ -78,6 +80,12 @@ void handleButtonStateChanges()
       previousButtonState = HIGH;
     }
 }
+
+// void logFreeMemory() {
+//   uint32_t freeHeapSize = ESP.getFreeHeap();
+//   uint32_t largestHeapBlockSize = ESP.getMaxFreeBlockSize();
+//   Serial.printf(PSTR("Memory free heap %d, largest block: %d\n"), freeHeapSize, largestHeapBlockSize);
+// }
 
 void handleEventStateChanges()
 {
@@ -119,6 +127,8 @@ void loop()
   {
     EXECUTE_PERIODICALLY(lastFlashLedCheck, 250, flashLed();)    
   }
+
+//   EXECUTE_PERIODICALLY(lastMemoryLog, 600 * 1000, logFreeMemory();)
     
   delay(50);
 }

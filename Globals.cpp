@@ -10,7 +10,7 @@ int previousButtonState = HIGH;
 
 void setupServices()
 {
-  DebugPrintf("Setup TimeKeeper");
+  DebugPrintf("Setup TimeKeeper\n");
   setupTimeKeeper();
   DebugPrintf("Setup MDNS\n");
   setupMDNS();
